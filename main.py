@@ -117,7 +117,7 @@ def click_tool(loc:tuple[int,int],button:Literal['left','right','middle']='left'
     return f'{num_clicks.get(clicks)} {button} Clicked on {control.Name} Element with ControlType {control.ControlTypeName} at ({x},{y}).'
 
 @mcp.tool(name='Type-Tool',description='Type text into input fields, text areas, or focused elements. Set clear=True to replace existing text, False to append. Click on target element coordinates first.')
-def type_tool(loc:tuple[int,int],text:str,clear:bool=False):
+def type_tool(loc:tuple[int,int],text:str,clear:bool=False,press_enter:bool=False)->str:
     x,y=loc
     pg.click(x=x, y=y)
     control=desktop.get_element_under_cursor()
@@ -125,6 +125,8 @@ def type_tool(loc:tuple[int,int],text:str,clear:bool=False):
         pg.hotkey('ctrl','a')
         pg.press('backspace')
     pg.typewrite(text,interval=0.1)
+    if press_enter:
+        pg.press('enter')
     return f'Typed {text} on {control.Name} Element with ControlType {control.ControlTypeName} at ({x},{y}).'
 
 @mcp.tool(name='Resize-Tool',description='Resize a specific application window (e.g., "notepad", "calculator", "chrome", etc.) to specific size (WIDTHxHEIGHT) or move to specific location (X,Y).')
