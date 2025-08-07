@@ -58,7 +58,7 @@
   Easily adapt or extend tools to suit your unique automation or AI integration needs.
 
 - **Real-Time Interaction**  
-  Typical latency between actions (e.g., from one mouse click to the next) ranges from **1.5 to 2.3 secs**, and may slightly vary based on the number of active applications and system load, also the inferencing speed of the llm.
+  Typical latency between actions (e.g., from one mouse click to the next) ranges from **0.7 to 2.5 secs**, and may slightly vary based on the number of active applications and system load, also the inferencing speed of the llm.
 
 ### Prerequisites
 
@@ -66,7 +66,7 @@
 - Anthropic Claude Desktop app or other MCP Clients
 - UV (Package Manager) from Astra, install with `pip install uv`
 - DXT (Desktop Extension) from Antropic, install with `npm install -g @anthropic-ai/dxt`
-- Set `English` as the default language in Windows
+- `English` as the default language in Windows or disable the `Launch-Tool` and `Resize-Tool` in the MCP Server for Windows with other languages.
 
 ## 🏁 Getting Started
 
