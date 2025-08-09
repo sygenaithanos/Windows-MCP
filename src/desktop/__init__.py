@@ -1,5 +1,5 @@
 from uiautomation import Control, GetRootControl, ControlType, GetFocusedControl, SetWindowTopmost, IsTopLevelWindow, IsZoomed, IsIconic, IsWindowVisible, ControlFromHandle
-from src.desktop.config import EXCLUDED_APPS,BROWSER_NAMES
+from src.desktop.config import EXCLUDED_CLASSNAMES,BROWSER_NAMES, AVOIDED_APPS
 from src.desktop.views import DesktopState,App,Size
 from fuzzywuzzy import process
 from psutil import Process
@@ -111,17 +111,16 @@ class Desktop:
         
     def launch_app(self,name:str)->tuple[str,int]:
         apps_map=self.get_apps_from_start_menu()
-        matched_app=process.extractOne(name,apps_map.keys())
+        matched_app=process.extractOne(name,apps_map,score_cutoff=90)
         if matched_app is None:
             return (f'Application {name.title()} not found in start menu.',1)
-        app_name,_=matched_app
-        appid=apps_map.get(app_name)
-        if appid is None:
+        app_id,_,app_name=matched_app
+        if app_id is None:
             return (f'Application {name.title()} not found in start menu.',1)
         if name.endswith('.exe'):
-            response,status=self.execute_command(f'Start-Process "{appid}"')
+            response,status=self.execute_command(f'Start-Process "{app_id}"')
         else:
-            response,status=self.execute_command(f'Start-Process "shell:AppsFolder\\{appid}"')
+            response,status=self.execute_command(f'Start-Process "shell:AppsFolder\\{app_id}"')
         return response,status
     
     def switch_app(self,name:str)->tuple[str,int]:
@@ -161,7 +160,7 @@ class Desktop:
             elements = desktop.GetChildren()
             apps = []
             for depth, element in enumerate(elements):
-                if element.ClassName in EXCLUDED_APPS or self.is_overlay_app(element):
+                if element.ClassName in EXCLUDED_CLASSNAMES or element.Name in AVOIDED_APPS or self.is_overlay_app(element):
                     continue
                 if element.ControlType in [ControlType.WindowControl, ControlType.PaneControl]:
                     status = self.get_app_status(element)

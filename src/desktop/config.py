@@ -6,6 +6,6 @@ AVOIDED_APPS:Set[str]=set([
     'Recording toolbar'
 ])
 
-EXCLUDED_APPS:Set[str]=set([
+EXCLUDED_CLASSNAMES:Set[str]=set([
     'Progman','Shell_TrayWnd','Microsoft.UI.Content.PopupWindowSiteBridge'
-]).union(AVOIDED_APPS)
+])

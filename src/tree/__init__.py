@@ -3,7 +3,7 @@ from src.tree.config import INTERACTIVE_CONTROL_TYPE_NAMES,INFORMATIVE_CONTROL_T
 from uiautomation import GetRootControl,Control,ImageControl,ScrollPattern
 from src.tree.utils import random_point_within_bounding_box
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from src.desktop.config import AVOIDED_APPS, EXCLUDED_APPS
+from src.desktop.config import AVOIDED_APPS, EXCLUDED_CLASSNAMES
 from PIL import Image, ImageFont, ImageDraw
 from typing import TYPE_CHECKING
 from time import sleep
@@ -28,9 +28,9 @@ class Tree:
         found_foreground_app=False
 
         for app in node.GetChildren():
-            if app.ClassName in EXCLUDED_APPS:
+            if app.ClassName in EXCLUDED_CLASSNAMES:
                 apps.append(app)
-            elif app.ClassName not in AVOIDED_APPS and self.desktop.is_app_visible(app):
+            elif app.Name not in AVOIDED_APPS and self.desktop.is_app_visible(app):
                 if not found_foreground_app:
                     apps.append(app)
                     found_foreground_app=True
