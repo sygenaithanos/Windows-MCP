@@ -27,6 +27,7 @@ thus enabling to operate the desktop on the user's behalf.
 ''')
 
 desktop=Desktop()
+default_language=desktop.get_default_language()
 cursor=SystemCursor()
 watch_cursor=WatchCursor()
 ctypes.windll.user32.SetProcessDPIAware()
@@ -45,32 +46,29 @@ mcp=FastMCP(name='windows-mcp',instructions=instructions,lifespan=lifespan)
 
 @mcp.tool(name='Launch-Tool', description='Launch an application from the Windows Start Menu by name (e.g., "notepad", "calculator", "chrome")')
 def launch_tool(name: str) -> str:
-    _,status=desktop.launch_app(name)
+    response,status=desktop.launch_app(name)
     if status!=0:
-        return f'Failed to launch {name.title()}.'
+        return f'Failed to launch {name.title()}. Try to use the app name in the default language ({default_language}).'
     else:
-        return f'Launched {name.title()}.'
+        return response
     
 @mcp.tool(name='Powershell-Tool', description='Execute PowerShell commands and return the output with status code')
 def powershell_tool(command: str) -> str:
     response,status=desktop.execute_command(command)
     return f'Status Code: {status}\nResponse: {response}'
 
-@mcp.tool(name='State-Tool',description='Capture comprehensive desktop state including default browser and language, focused/opened applications, interactive UI elements (buttons, text fields, menus), informative content (text, labels, status), and scrollable areas. Optionally includes visual screenshot when use_vision=True. Essential for understanding current desktop context and available UI interactions.')
+@mcp.tool(name='State-Tool',description='Capture comprehensive desktop state including default language used by user interface, focused/opened applications, interactive UI elements (buttons, text fields, menus), informative content (text, labels, status), and scrollable areas. Optionally includes visual screenshot when use_vision=True. Essential for understanding current desktop context and available UI interactions.')
 def state_tool(use_vision:bool=False)->str:
     desktop_state=desktop.get_state(use_vision=use_vision)
     interactive_elements=desktop_state.tree_state.interactive_elements_to_string()
     informative_elements=desktop_state.tree_state.informative_elements_to_string()
     scrollable_elements=desktop_state.tree_state.scrollable_elements_to_string()
-    default_browser=desktop.get_default_browser()
-    default_language=desktop.get_default_language()
     apps=desktop_state.apps_to_string()
     active_app=desktop_state.active_app_to_string()
     return [dedent(f'''
-    Default Browser: {default_browser}
-                   
-    Default Language: {default_language}            
-
+    Default Language of User Interface:
+    {default_language}
+                            
     Focused App:
     {active_app}
 
@@ -131,16 +129,19 @@ def type_tool(loc:tuple[int,int],text:str,clear:bool=False,press_enter:bool=Fals
 
 @mcp.tool(name='Resize-Tool',description='Resize a specific application window (e.g., "notepad", "calculator", "chrome", etc.) to specific size (WIDTHxHEIGHT) or move to specific location (X,Y).')
 def resize_tool(name:str,size:tuple[int,int]=None,loc:tuple[int,int]=None)->str:
-    response,_=desktop.resize_app(name,size,loc)
-    return response
+    response,status=desktop.resize_app(name,size,loc)
+    if status!=0:
+        return f'Failed to resize {name.title()} window. Try to use the app name in the default language ({default_language}).'
+    else:
+        return response
 
 @mcp.tool(name='Switch-Tool',description='Switch to a specific application window (e.g., "notepad", "calculator", "chrome", etc.) and bring to foreground.')
 def switch_tool(name: str) -> str:
-    _,status=desktop.switch_app(name)
+    response,status=desktop.switch_app(name)
     if status!=0:
-        return f'Failed to switch to {name.title()} window.'
+        return f'Failed to switch to {name.title()} window. Try to use the app name in the default language ({default_language}).'
     else:
-        return f'Switched to {name.title()} window.'
+        return response
 
 @mcp.tool(name='Scroll-Tool',description='Scroll at specific coordinates or current mouse position. Use wheel_times to control scroll amount (1 wheel = ~3-5 lines). Essential for navigating lists, web pages, and long content.')
 def scroll_tool(loc:tuple[int,int]=None,type:Literal['horizontal','vertical']='vertical',direction:Literal['up','down','left','right']='down',wheel_times:int=1)->str:

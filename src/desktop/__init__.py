@@ -69,7 +69,7 @@ class Desktop:
         command="Get-Culture | Select-Object Name,DisplayName | ConvertTo-Csv -NoTypeInformation"
         response,_=self.execute_command(command)
         reader=csv.DictReader(io.StringIO(response))
-        return "".join([row.get('Name') for row in reader])
+        return "".join([row.get('DisplayName') for row in reader])
     
     def get_apps_from_start_menu(self)->dict[str,str]:
         command='Get-StartApps | ConvertTo-Csv -NoTypeInformation'
@@ -91,9 +91,9 @@ class Desktop:
     
     def resize_app(self,name:str,size:tuple[int,int]=None,loc:tuple[int,int]=None)->tuple[str,int]:
         apps=self.get_apps()
-        matched_app:tuple[App,int]|None=process.extractOne(name,apps)
+        matched_app:tuple[App,int]|None=process.extractOne(name,apps,score_cutoff=70)
         if matched_app is None:
-            return (f'Application {name.title()} not found.',1)
+            return (f'Application {name.title()} not open.',1)
         app,_=matched_app
         app_control=ControlFromHandle(app.handle)
         if loc is None:
@@ -111,21 +111,23 @@ class Desktop:
         
     def launch_app(self,name:str)->tuple[str,int]:
         apps_map=self.get_apps_from_start_menu()
-        matched_app=process.extractOne(name,apps_map,score_cutoff=90)
+        matched_app=process.extractOne(name,apps_map,score_cutoff=80)
+
+        # TODO: Handle the case of understanding the language of the app name
+
         if matched_app is None:
             return (f'Application {name.title()} not found in start menu.',1)
         app_id,_,app_name=matched_app
-        if app_id is None:
-            return (f'Application {name.title()} not found in start menu.',1)
-        if name.endswith('.exe'):
-            response,status=self.execute_command(f'Start-Process "{app_id}"')
+        if app_id.endswith('.exe'):
+            _,status=self.execute_command(f'Start-Process "{app_id}"')
         else:
-            response,status=self.execute_command(f'Start-Process "shell:AppsFolder\\{app_id}"')
+            _,status=self.execute_command(f'Start-Process "shell:AppsFolder\\{app_id}"')
+        response=f'Launched {name.title()}. Wait for the app to launch...'
         return response,status
     
     def switch_app(self,name:str)->tuple[str,int]:
         apps={app.name:app for app in self.desktop_state.apps}
-        matched_app:tuple[str,float]=process.extractOne(name,list(apps.keys()))
+        matched_app:tuple[str,float]=process.extractOne(name,apps,score_cutoff=70)
         if matched_app is None:
             return (f'Application {name.title()} not found.',1)
         app_name,_=matched_app
