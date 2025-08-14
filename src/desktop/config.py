@@ -7,5 +7,5 @@ AVOIDED_APPS:Set[str]=set([
 ])
 
 EXCLUDED_CLASSNAMES:Set[str]=set([
-    'Progman','Shell_TrayWnd','Microsoft.UI.Content.PopupWindowSiteBridge'
+    'Progman','Shell_TrayWnd','Microsoft.UI.Content.PopupWindowSiteBridge','Windows.UI.Core.CoreWindow'
 ])
