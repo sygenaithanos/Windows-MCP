@@ -100,8 +100,10 @@ def clipboard_tool(mode: Literal['copy', 'paste'], text: str = None)->str:
         raise ValueError('Invalid mode. Use "copy" or "paste".')
 
 @mcp.tool(name='Click-Tool',description='Click on UI elements at specific coordinates. Supports left/right/middle mouse buttons and single/double/triple clicks. Use coordinates from State-Tool output.')
-def click_tool(loc:tuple[int,int],button:Literal['left','right','middle']='left',clicks:int=1)->str:
-    x,y=loc
+def click_tool(loc:list[int],button:Literal['left','right','middle']='left',clicks:int=1)->str:
+    if len(loc) != 2:
+        raise ValueError("Location must be a list of exactly 2 integers [x, y]")
+    x,y=loc[0],loc[1]
     pg.moveTo(x, y)
     control=desktop.get_element_under_cursor()
     parent_control=control.GetParentControl()
@@ -115,8 +117,10 @@ def click_tool(loc:tuple[int,int],button:Literal['left','right','middle']='left'
     return f'{num_clicks.get(clicks)} {button} Clicked on {control.Name} Element with ControlType {control.ControlTypeName} at ({x},{y}).'
 
 @mcp.tool(name='Type-Tool',description='Type text into input fields, text areas, or focused elements. Set clear=True to replace existing text, False to append. Click on target element coordinates first.')
-def type_tool(loc:tuple[int,int],text:str,clear:bool=False,press_enter:bool=False)->str:
-    x,y=loc
+def type_tool(loc:list[int],text:str,clear:bool=False,press_enter:bool=False)->str:
+    if len(loc) != 2:
+        raise ValueError("Location must be a list of exactly 2 integers [x, y]")
+    x,y=loc[0],loc[1]
     pg.click(x=x, y=y)
     control=desktop.get_element_under_cursor()
     if clear=='True':
@@ -128,8 +132,19 @@ def type_tool(loc:tuple[int,int],text:str,clear:bool=False,press_enter:bool=Fals
     return f'Typed {text} on {control.Name} Element with ControlType {control.ControlTypeName} at ({x},{y}).'
 
 @mcp.tool(name='Resize-Tool',description='Resize a specific application window (e.g., "notepad", "calculator", "chrome", etc.) to specific size (WIDTHxHEIGHT) or move to specific location (X,Y).')
-def resize_tool(name:str,size:tuple[int,int]=None,loc:tuple[int,int]=None)->str:
-    response,status=desktop.resize_app(name,size,loc)
+def resize_tool(name:str,size:list[int]=None,loc:list[int]=None)->str:
+    # Validate size parameter if provided
+    if size is not None and len(size) != 2:
+        raise ValueError("Size must be a list of exactly 2 integers [width, height]")
+    # Validate loc parameter if provided  
+    if loc is not None and len(loc) != 2:
+        raise ValueError("Location must be a list of exactly 2 integers [x, y]")
+    
+    # Convert to tuples for the existing function
+    size_tuple = tuple(size) if size is not None else None
+    loc_tuple = tuple(loc) if loc is not None else None
+    
+    response,status=desktop.resize_app(name,size_tuple,loc_tuple)
     if status!=0:
         return f'Failed to resize {name.title()} window. Try to use the app name in the default language ({default_language}).'
     else:
@@ -144,9 +159,11 @@ def switch_tool(name: str) -> str:
         return response
 
 @mcp.tool(name='Scroll-Tool',description='Scroll at specific coordinates or current mouse position. Use wheel_times to control scroll amount (1 wheel = ~3-5 lines). Essential for navigating lists, web pages, and long content.')
-def scroll_tool(loc:tuple[int,int]=None,type:Literal['horizontal','vertical']='vertical',direction:Literal['up','down','left','right']='down',wheel_times:int=1)->str:
+def scroll_tool(loc:list[int]=None,type:Literal['horizontal','vertical']='vertical',direction:Literal['up','down','left','right']='down',wheel_times:int=1)->str:
     if loc:
-        x,y=loc
+        if len(loc) != 2:
+            raise ValueError("Location must be a list of exactly 2 integers [x, y]")
+        x,y=loc[0],loc[1]
         pg.moveTo(x, y)
     match type:
         case 'vertical':
@@ -178,16 +195,22 @@ def scroll_tool(loc:tuple[int,int]=None,type:Literal['horizontal','vertical']='v
     return f'Scrolled {type} {direction} by {wheel_times} wheel times.'
 
 @mcp.tool(name='Drag-Tool',description='Drag and drop operation from source coordinates to destination coordinates. Useful for moving files, resizing windows, or drag-and-drop interactions.')
-def drag_tool(from_loc:tuple[int,int],to_loc:tuple[int,int])->str:
-    x1,y1=from_loc
-    x2,y2=to_loc
+def drag_tool(from_loc:list[int],to_loc:list[int])->str:
+    if len(from_loc) != 2:
+        raise ValueError("from_loc must be a list of exactly 2 integers [x, y]")
+    if len(to_loc) != 2:
+        raise ValueError("to_loc must be a list of exactly 2 integers [x, y]")
+    x1,y1=from_loc[0],from_loc[1]
+    x2,y2=to_loc[0],to_loc[1]
     pg.drag(x1, y1, x2, y2, duration=0.5)
     control=desktop.get_element_under_cursor()
     return f'Dragged {control.Name} element with ControlType {control.ControlTypeName} from ({x1},{y1}) to ({x2},{y2}).'
 
 @mcp.tool(name='Move-Tool',description='Move mouse cursor to specific coordinates without clicking. Useful for hovering over elements or positioning cursor before other actions.')
-def move_tool(to_loc:tuple[int,int])->str:
-    x,y=to_loc
+def move_tool(to_loc:list[int])->str:
+    if len(to_loc) != 2:
+        raise ValueError("to_loc must be a list of exactly 2 integers [x, y]")
+    x,y=to_loc[0],to_loc[1]
     pg.moveTo(x, y)
     return f'Moved the mouse pointer to ({x},{y}).'
 
