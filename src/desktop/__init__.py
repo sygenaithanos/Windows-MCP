@@ -75,15 +75,7 @@ class Desktop:
         command='Get-StartApps | ConvertTo-Csv -NoTypeInformation'
         apps_info,_=self.execute_command(command)
         reader=csv.DictReader(io.StringIO(apps_info))
-        # Keep original case for Chinese app names, only lowercase for matching
-        apps_dict = {}
-        for row in reader:
-            name = row.get('Name')
-            app_id = row.get('AppID')
-            if name and app_id:
-                # Store both original name and lowercase version for better matching
-                apps_dict[name] = app_id
-        return apps_dict
+        return {row.get('Name').lower():row.get('AppID') for row in reader}
     
     def execute_command(self,command:str)->tuple[str,int]:
         try:
