@@ -126,7 +126,25 @@ def type_tool(loc:list[int],text:str,clear:bool=False,press_enter:bool=False)->s
     if clear=='True':
         pg.hotkey('ctrl','a')
         pg.press('backspace')
-    pg.typewrite(text,interval=0.1)
+    
+    # Check if text contains non-ASCII characters (like Chinese)
+    if any(ord(char) > 127 for char in text):
+        # Use clipboard method for non-ASCII characters
+        # Store current clipboard content
+        original_clipboard = pc.paste()
+        try:
+            # Copy text to clipboard and paste it
+            pc.copy(text)
+            pg.sleep(0.1)  # Small delay to ensure clipboard is updated
+            pg.hotkey('ctrl','v')
+        finally:
+            # Restore original clipboard content
+            pg.sleep(0.1)
+            pc.copy(original_clipboard)
+    else:
+        # Use normal typewrite for ASCII characters
+        pg.typewrite(text,interval=0.1)
+    
     if press_enter:
         pg.press('enter')
     return f'Typed {text} on {control.Name} Element with ControlType {control.ControlTypeName} at ({x},{y}).'
