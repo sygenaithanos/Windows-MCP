@@ -79,11 +79,28 @@ class Desktop:
     
     def execute_command(self,command:str)->tuple[str,int]:
         try:
-            result = subprocess.run(['powershell', '-Command']+command.split(), 
-            capture_output=True, check=True)
-            return (result.stdout.decode('latin1'),result.returncode)
+            # Use UTF-8 encoding for better Chinese character support
+            result = subprocess.run(
+                ['powershell', '-NoProfile', '-Command', 
+                 '[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; ' + command], 
+                capture_output=True, check=True, text=True, encoding='utf-8'
+            )
+            return (result.stdout, result.returncode)
         except subprocess.CalledProcessError as e:
-            return (e.stdout.decode('latin1'),e.returncode)
+            try:
+                # Try UTF-8 first
+                error_output = e.stdout if hasattr(e, 'stdout') and e.stdout else ''
+                return (error_output, e.returncode)
+            except:
+                # Fallback to GBK for Chinese Windows systems
+                try:
+                    result = subprocess.run(
+                        ['powershell', '-NoProfile', '-Command', command], 
+                        capture_output=True, check=False
+                    )
+                    return (result.stdout.decode('gbk', errors='ignore'), result.returncode)
+                except:
+                    return ('Command execution failed with encoding issues', 1)
         
     def is_app_browser(self,node:Control):
         process=Process(node.ProcessId)
@@ -91,11 +108,30 @@ class Desktop:
     
     def resize_app(self,name:str,size:tuple[int,int]=None,loc:tuple[int,int]=None)->tuple[str,int]:
         apps=self.get_apps()
-        matched_app:tuple[App,int]|None=process.extractOne(name,apps,score_cutoff=70)
+        
+        # Improved fuzzy matching for Chinese and English app names
+        # First try exact match (case insensitive)
+        exact_matches = [app for app in apps if name.lower() in app.name.lower() or app.name.lower() in name.lower()]
+        matched_app = None
+        
+        if exact_matches:
+            matched_app = exact_matches[0]
+        else:
+            # If no exact match, use fuzzy matching with lower threshold for Chinese
+            fuzzy_match = process.extractOne(name, apps, score_cutoff=60)
+            if fuzzy_match:
+                matched_app, _ = fuzzy_match
+            else:
+                # Try partial matching for Chinese characters
+                for app in apps:
+                    if any(char in app.name for char in name) or any(char in name for char in app.name):
+                        matched_app = app
+                        break
+        
         if matched_app is None:
             return (f'Application {name.title()} not open.',1)
-        app,_=matched_app
-        app_control=ControlFromHandle(app.handle)
+        
+        app_control=ControlFromHandle(matched_app.handle)
         if loc is None:
             x=app_control.BoundingRectangle.left
             y=app_control.BoundingRectangle.top
@@ -111,19 +147,43 @@ class Desktop:
         
     def launch_app(self,name:str)->tuple[str,int]:
         apps_map=self.get_apps_from_start_menu()
-        matched_app=process.extractOne(name,apps_map,score_cutoff=80)
-
-        # TODO: Handle the case of understanding the language of the app name
-
-        if matched_app is None:
-            return (f'Application {name.title()} not found in start menu.',1)
-        app_id,_,app_name=matched_app
-        if app_id.endswith('.exe'):
-            _,status=self.execute_command(f'Start-Process "{app_id}"')
-        else:
-            _,status=self.execute_command(f'Start-Process "shell:AppsFolder\\{app_id}"')
-        response=f'Launched {name.title()}. Wait for the app to launch...'
-        return response,status
+        
+        # Improved fuzzy matching for Chinese and English app names
+        # First try exact match (case insensitive)
+        exact_matches = {k: v for k, v in apps_map.items() if name.lower() in k.lower() or k.lower() in name.lower()}
+        if exact_matches:
+            # Use the first exact match
+            app_name = list(exact_matches.keys())[0]
+            app_id = exact_matches[app_name]
+            if app_id.endswith('.exe'):
+                _,status=self.execute_command(f'Start-Process "{app_id}"')
+            else:
+                _,status=self.execute_command(f'Start-Process "shell:AppsFolder\\{app_id}"')
+            response=f'Launched {name.title()}. Wait for the app to launch...'
+            return response,status
+        
+        # If no exact match, use fuzzy matching with lower threshold for Chinese
+        matched_app=process.extractOne(name,apps_map,score_cutoff=60)
+        if matched_app is not None:
+            app_id,_,app_name=matched_app
+            if app_id.endswith('.exe'):
+                _,status=self.execute_command(f'Start-Process "{app_id}"')
+            else:
+                _,status=self.execute_command(f'Start-Process "shell:AppsFolder\\{app_id}"')
+            response=f'Launched {name.title()}. Wait for the app to launch...'
+            return response,status
+        
+        # Try partial matching for Chinese characters
+        for app_name, app_id in apps_map.items():
+            if any(char in app_name for char in name) or any(char in name for char in app_name):
+                if app_id.endswith('.exe'):
+                    _,status=self.execute_command(f'Start-Process "{app_id}"')
+                else:
+                    _,status=self.execute_command(f'Start-Process "shell:AppsFolder\\{app_id}"')
+                response=f'Launched {name.title()}. Wait for the app to launch...'
+                return response,status
+        
+        return (f'Application {name.title()} not found in start menu. Available apps with similar names: {list(apps_map.keys())[:5]}',1)
     
     def switch_app(self,name:str)->tuple[str,int]:
         apps={app.name:app for app in self.desktop_state.apps}
