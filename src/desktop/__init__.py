@@ -91,7 +91,7 @@ class Desktop:
                 # Try UTF-8 first
                 error_output = e.stdout if hasattr(e, 'stdout') and e.stdout else ''
                 return (error_output, e.returncode)
-            except:
+            except Exception:
                 # Fallback to GBK for Chinese Windows systems
                 try:
                     result = subprocess.run(
@@ -99,7 +99,7 @@ class Desktop:
                         capture_output=True, check=False
                     )
                     return (result.stdout.decode('gbk', errors='ignore'), result.returncode)
-                except:
+                except Exception:
                     return ('Command execution failed with encoding issues', 1)
         
     def is_app_browser(self,node:Control):
@@ -186,17 +186,16 @@ class Desktop:
         return (f'Application {name.title()} not found in start menu. Available apps with similar names: {list(apps_map.keys())[:5]}',1)
     
     def switch_app(self,name:str)->tuple[str,int]:
-        apps={app.name:app for app in self.desktop_state.apps}
-        matched_app:tuple[str,float]=process.extractOne(name,apps,score_cutoff=70)
+        apps={app.name:app for app in self.get_apps()}
+        matched_app:tuple[str,float]=process.extractOne(name,apps,score_cutoff=20)
         if matched_app is None:
             return (f'Application {name.title()} not found.',1)
-        app_name,_=matched_app
-        app=apps.get(app_name)
+        app,_,_=matched_app
         if SetWindowTopmost(app.handle,isTopmost=True):
-            return (f'{app_name.title()} switched to foreground.',0)
+            return (f'{app.name.title()} switched to foreground.',0)
         else:
-            return (f'Failed to switch to {app_name.title()}.',1)
-    
+            return (f'Failed to switch to {app.name.title()}.',1)
+
     def get_app_size(self,control:Control):
         window=control.BoundingRectangle
         if window.isempty():

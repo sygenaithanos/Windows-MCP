@@ -47,10 +47,7 @@ mcp=FastMCP(name='windows-mcp',instructions=instructions,lifespan=lifespan)
 @mcp.tool(name='Launch-Tool', description='Launch an application from the Windows Start Menu by name (e.g., "notepad", "calculator", "chrome")')
 def launch_tool(name: str) -> str:
     response,status=desktop.launch_app(name)
-    if status!=0:
-        return f'Failed to launch {name.title()}. Try to use the app name in the default language ({default_language}).'
-    else:
-        return response
+    return response
     
 @mcp.tool(name='Powershell-Tool', description='Execute PowerShell commands and return the output with status code')
 def powershell_tool(command: str) -> str:
@@ -151,30 +148,19 @@ def type_tool(loc:list[int],text:str,clear:bool=False,press_enter:bool=False)->s
 
 @mcp.tool(name='Resize-Tool',description='Resize a specific application window (e.g., "notepad", "calculator", "chrome", etc.) to specific size (WIDTHxHEIGHT) or move to specific location (X,Y).')
 def resize_tool(name:str,size:list[int]=None,loc:list[int]=None)->str:
-    # Validate size parameter if provided
     if size is not None and len(size) != 2:
         raise ValueError("Size must be a list of exactly 2 integers [width, height]")
-    # Validate loc parameter if provided  
     if loc is not None and len(loc) != 2:
         raise ValueError("Location must be a list of exactly 2 integers [x, y]")
-    
-    # Convert to tuples for the existing function
     size_tuple = tuple(size) if size is not None else None
     loc_tuple = tuple(loc) if loc is not None else None
-    
     response,status=desktop.resize_app(name,size_tuple,loc_tuple)
-    if status!=0:
-        return f'Failed to resize {name.title()} window. Try to use the app name in the default language ({default_language}).'
-    else:
-        return response
+    return response
 
 @mcp.tool(name='Switch-Tool',description='Switch to a specific application window (e.g., "notepad", "calculator", "chrome", etc.) and bring to foreground.')
 def switch_tool(name: str) -> str:
     response,status=desktop.switch_app(name)
-    if status!=0:
-        return f'Failed to switch to {name.title()} window. Try to use the app name in the default language ({default_language}).'
-    else:
-        return response
+    return response
 
 @mcp.tool(name='Scroll-Tool',description='Scroll at specific coordinates or current mouse position. Use wheel_times to control scroll amount (1 wheel = ~3-5 lines). Essential for navigating lists, web pages, and long content.')
 def scroll_tool(loc:list[int]=None,type:Literal['horizontal','vertical']='vertical',direction:Literal['up','down','left','right']='down',wheel_times:int=1)->str:
