@@ -11,6 +11,7 @@ urls = { homepage = "https://github.com/CursorTouch" }
 keywords = ["windows", "mcp", "ai", "desktop","ai agent"]
 requires-python = ">=3.13"
 dependencies = [
+    "click>=8.2.1",
     "fastmcp>=2.8.1",
     "fuzzywuzzy>=0.18.0",
     "humancursor>=1.1.5",

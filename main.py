@@ -2,7 +2,6 @@ from live_inspect.watch_cursor import WatchCursor
 from contextlib import asynccontextmanager
 from fastmcp.utilities.types import Image
 from humancursor import SystemCursor
-from platform import system, release
 from markdownify import markdownify
 from src.desktop import Desktop
 from textwrap import dedent
@@ -13,6 +12,7 @@ import pyautogui as pg
 import pyperclip as pc
 import requests
 import asyncio
+import click
 
 pg.FAILSAFE=False
 pg.PAUSE=1.0
@@ -236,5 +236,33 @@ def scrape_tool(url:str)->str:
     content=markdownify(html=html)
     return f'Scraped the contents of the entire webpage:\n{content}'
 
+
+@click.command()
+@click.option(
+    "--transport",
+    help="The transport layer used by the MCP server.",
+    type=click.Choice(['stdio','sse']),
+    default='stdio'
+)
+@click.option(
+    "--host",
+    help="Host to bind the SSE server.",
+    default="localhost",
+    type=str,
+    show_default=True
+)
+@click.option(
+    "--port",
+    help="Port to bind the SSE server.",
+    default=8000,
+    type=int,
+    show_default=True
+)
+def main(transport, host, port):
+    if transport=='stdio':
+        mcp.run(transport='stdio')
+    else:
+        mcp.run(transport='sse',host=host,port=port)
+
 if __name__ == "__main__":
-    mcp.run()
+    main()
