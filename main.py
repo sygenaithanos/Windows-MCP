@@ -13,24 +13,20 @@ import pyautogui as pg
 import pyperclip as pc
 import requests
 import asyncio
-import ctypes
 
 pg.FAILSAFE=False
 pg.PAUSE=1.0
 
-os=system()
-version=release()
-
-instructions=dedent(f'''
-Windows MCP server provides tools to interact directly with the {os} {version} desktop, 
-thus enabling to operate the desktop on the user's behalf.
-''')
-
 desktop=Desktop()
-default_language=desktop.get_default_language()
 cursor=SystemCursor()
 watch_cursor=WatchCursor()
-ctypes.windll.user32.SetProcessDPIAware()
+windows_version=desktop.get_windows_version()
+default_language=desktop.get_default_language()
+
+instructions=dedent(f'''
+Windows MCP server provides tools to interact directly with the {windows_version} desktop, 
+thus enabling to operate the desktop on the user's behalf.
+''')
 
 @asynccontextmanager
 async def lifespan(app: FastMCP):

@@ -1,5 +1,5 @@
 <div align="center">
-
+  [![MseeP.ai Security Assessment Badge](https://mseep.net/pr/cursortouch-windows-mcp-badge.png)](https://mseep.ai/app/cursortouch-windows-mcp)
   <h1>🪟 Windows-MCP</h1>
 
   <a href="https://github.com/CursorTouch/Windows-MCP/blob/main/LICENSE">
@@ -60,21 +60,102 @@
 - **Real-Time Interaction**  
   Typical latency between actions (e.g., from one mouse click to the next) ranges from **0.7 to 2.5 secs**, and may slightly vary based on the number of active applications and system load, also the inferencing speed of the llm.
 
+## 🛠️Installation
+
 ### Prerequisites
 
 - Python 3.13+
-- Anthropic Claude Desktop app or other MCP Clients
-- UV (Package Manager) from Astra, install with `pip install uv`
-- DXT (Desktop Extension) from Antropic, install with `npm install -g @anthropic-ai/dxt`
-- `English` as the default language in Windows or disable the `Launch-Tool` and `Resize-Tool` in the MCP Server for Windows with other languages.
+- UV (Package Manager) from Astra, install with `pip install uv` or `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- `English` as the default language in Windows highly preferred or disable the `Launch-Tool` and `Switch-Tool` in the MCP Server for Windows with other languages.
 
-## 🏁 Getting Started
+<details>
+  <summary>Install in Claude Desktop</summary>
 
-### Gemini CLI
+  1. Install [Claude Desktop](https://claude.ai/download) and
 
-1. Navigate to `%USERPROFILE%/.gemini` in File Explorer and open `settings.json`.
+```shell
+npm install -g @anthropic-ai/dxt
+```
 
-2. Add the `windows-mcp` config in the `settings.json` and save it.
+  2. Clone the repository.
+
+```shell
+git clone https://github.com/CursorTouch/Windows-MCP.git
+
+cd Windows-MCP
+```
+
+  3. Build Desktop Extension `DXT`:
+
+```shell
+npx @anthropic-ai/dxt pack
+```
+
+  4. Open Claude Desktop:
+
+Go to `Settings->Extensions->Advance Settings->Install Extension` (locate the `.dxt` file)-> Install
+
+  5. Enjoy 🥳.
+
+For additional Claude Desktop integration troubleshooting, see the [MCP documentation](https://modelcontextprotocol.io/quickstart/server#claude-for-desktop-integration-issues). The documentation includes helpful tips for checking logs and resolving common issues.
+</details>
+
+<details>
+  <summary>Install in Perplexity Desktop</summary>
+
+  1. Install [Perplexity Desktop](https://apps.microsoft.com/detail/xp8jnqfbqh6pvf):
+
+  2. Clone the repository.
+
+```shell
+git clone https://github.com/CursorTouch/Windows-MCP.git
+
+cd Windows-MCP
+```
+  
+  3. Open Perplexity Desktop:
+
+Go to `Settings->Connectors->Add Connector->Advanced`
+
+  4. Enter the name as `Windows-MCP`, then paste the following JSON in the text area.
+
+```json
+{
+  "command": "uv",
+  "args": [
+    "--directory",
+    "<path to the windows-mcp directory>",
+    "run",
+    "main.py"
+  ]
+}
+```
+
+5. Click `Save` and Enjoy 🥳.
+
+For additional Claude Desktop integration troubleshooting, see the [Perplexity MCP Support](https://www.perplexity.ai/help-center/en/articles/11502712-local-and-remote-mcps-for-perplexity). The documentation includes helpful tips for checking logs and resolving common issues.
+</details>
+
+<details>
+  <summary> Install in Gemini CLI</summary>
+
+  1. Install Gemini CLI:
+
+```shell
+npm install -g @google/gemini-cli
+```
+
+  2. Clone the repository.
+
+```shell
+git clone https://github.com/CursorTouch/Windows-MCP.git
+
+cd Windows-MCP
+```
+
+  3. Navigate to `%USERPROFILE%/.gemini` in File Explorer and open `settings.json`.
+
+  4. Add the `windows-mcp` config in the `settings.json` and save it.
 
 ```json
 {
@@ -95,36 +176,85 @@
 }
 ```
 
-3. Rerun Gemini CLI in terminal. Enjoy 🥳
+  5. Rerun Gemini CLI in terminal. Enjoy 🥳
+</details>
 
-### Claude Desktop
+<details>
+  <summary>Install in Qwen Code</summary>
+  1. Install Qwen Code:
 
-1. Clone the repository.
+```shell
+npm install -g @qwen-code/qwen-code@latest
+```
+  2. Clone the repository.
 
 ```shell
 git clone https://github.com/CursorTouch/Windows-MCP.git
+
 cd Windows-MCP
 ```
 
-2. Build Desktop Extension `DXT`:
+  3. Navigate to `%USERPROFILE%/.qwen/settings.json`.
 
-```shell
-npx @anthropic-ai/dxt pack
+  4. Add the `windows-mcp` config in the `settings.json` and save it.
+
+```json
+{
+//MCP Server Config
+  "mcpServers": {
+    "windows-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "<path to the windows-mcp directory>",
+        "run",
+        "main.py"
+      ]
+    }
+  }
+}
 ```
 
-3. Open Claude Desktop:
+  5. Rerun Qwen Code in terminal. Enjoy 🥳
+</details>
 
-Go to Claude Desktop: Settings->Extensions->Install Extension (locate the `.dxt` file)-> Install
+<details>
+  <summary>Install in Codex CLI</summary>
+  1. Install Codex CLI:
 
-Finally Enjoy 🥳.
+```shell
+npm install -g @openai/codex
+```
+  2. Clone the repository.
 
-For additional Claude Desktop integration troubleshooting, see the [MCP documentation](https://modelcontextprotocol.io/quickstart/server#claude-for-desktop-integration-issues). The documentation includes helpful tips for checking logs and resolving common issues.
+```shell
+git clone https://github.com/CursorTouch/Windows-MCP.git
+
+cd Windows-MCP
+```
+  3. Navigate to `%USERPROFILE%/.codex/config.toml`.
+
+  4. Add the `windows-mcp` config in the `config.toml` and save it.
+
+```toml
+[mcp_servers.windows-mcp]
+command="uv"
+args=[
+  "--directory",
+  "<path to the windows-mcp directory>",
+  "run",
+  "main.py"
+]
+```
+
+  5. Rerun Codex CLI in terminal. Enjoy 🥳
+</details>
 
 ---
 
-## 🛠️MCP Tools
+## 🔨MCP Tools
 
-Claude can access the following tools to interact with Windows:
+MCP Client can access the following tools to interact with Windows:
 
 - `Click-Tool`: Click on the screen at the given coordinates.
 - `Type-Tool`: Type text on an element (optionally clears existing text).
@@ -141,6 +271,13 @@ Claude can access the following tools to interact with Windows:
 - `Shell-Tool`: To execute PowerShell commands.
 - `Scrape-Tool`: To scrape the entire webpage for information.
 
+## 🤝 Connect with Us
+Stay updated and join our community:
+
+- 📢 Follow us on [X](https://x.com/CursorTouch) for the latest news and updates
+
+- 💬 Join our [Discord Community](https://discord.com/invite/Aue9Yj2VzS)
+
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=CursorTouch/Windows-MCP&type=Date)](https://www.star-history.com/#CursorTouch/Windows-MCP&Date)
@@ -153,6 +290,7 @@ This MCP interacts directly with your Windows operating system to perform action
 
 - Selecting specific sections of the text in a paragraph, as the MCP is relying on a11y tree. (⌛ Working on it.)
 - `Type-Tool` is meant for typing text, not programming in IDE because of it types program as a whole in a file. (⌛ Working on it.)
+- This MCP server can't be used to play video games.
 
 ## 🪪License
 
@@ -162,13 +300,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 Contributions are welcome! Please see [CONTRIBUTING](CONTRIBUTING) for setup instructions and development guidelines.
 
-Made with ❤️ by [Jeomon George](https://github.com/Jeomon)
+Made with ❤️ by [CursorTouch](https://github.com/CursorTouch)
 
 ## Citation
 
 ```bibtex
 @software{
-  author       = {George, Jeomon},
+  author       = {CursorTouch},
   title        = {Windows-MCP: Lightweight open-source project for integrating LLM agents with Windows},
   year         = {2024},
   publisher    = {GitHub},
