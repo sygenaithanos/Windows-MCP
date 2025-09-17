@@ -21,7 +21,7 @@
 
 **Windows MCP** is a lightweight, open-source project that enables seamless integration between AI agents and the Windows operating system. Acting as an MCP server bridges the gap between LLMs and the Windows operating system, allowing agents to perform tasks such as **file navigation, application control, UI interaction, QA testing,** and more.
 
-mcp-name: io.github.jeomon/Windows-MCP
+mcp-name: io.github.CursorTouch/Windows-MCP
 
 ## Updates
 
