@@ -1,5 +1,4 @@
 <div align="center">
-  [![MseeP.ai Security Assessment Badge](https://mseep.net/pr/cursortouch-windows-mcp-badge.png)](https://mseep.ai/app/cursortouch-windows-mcp)
   <h1>🪟 Windows-MCP</h1>
 
   <a href="https://github.com/CursorTouch/Windows-MCP/blob/main/LICENSE">
