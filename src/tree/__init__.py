@@ -1,5 +1,5 @@
+from src.tree.config import INTERACTIVE_CONTROL_TYPE_NAMES,INFORMATIVE_CONTROL_TYPE_NAMES, DEFAULT_ACTIONS, THREAD_MAX_RETRIES
 from src.tree.views import TreeElementNode, TextElementNode, ScrollElementNode, Center, BoundingBox, TreeState
-from src.tree.config import INTERACTIVE_CONTROL_TYPE_NAMES,INFORMATIVE_CONTROL_TYPE_NAMES, DEFAULT_ACTIONS
 from uiautomation import GetRootControl,Control,ImageControl,ScrollPattern
 from src.tree.utils import random_point_within_bounding_box
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -38,17 +38,26 @@ class Tree:
         interactive_nodes,informative_nodes,scrollable_nodes=[],[],[]
         # Parallel traversal (using ThreadPoolExecutor) to get nodes from each app
         with ThreadPoolExecutor() as executor:
-            future_to_node = {executor.submit(self.get_nodes, app,self.desktop.is_app_browser(app)): app for app in apps}
-            for future in as_completed(future_to_node):
-                try:
-                    result = future.result()
-                    if result:
-                        element_nodes,text_nodes,scroll_nodes=result
-                        interactive_nodes.extend(element_nodes)
-                        informative_nodes.extend(text_nodes)
-                        scrollable_nodes.extend(scroll_nodes)
-                except Exception as e:
-                    print(f"Error processing node {future_to_node[future].Name}: {e}")
+            retry_counts = {app: 0 for app in apps}
+            future_to_app = {executor.submit(self.get_nodes, app, self.desktop.is_app_browser(app)): app for app in apps}
+            while future_to_app:  # keep running until no pending futures
+                for future in as_completed(list(future_to_app)):
+                    app = future_to_app.pop(future)  # remove completed future
+                    try:
+                        result = future.result()
+                        if result:
+                            element_nodes, text_nodes, scroll_nodes = result
+                            interactive_nodes.extend(element_nodes)
+                            informative_nodes.extend(text_nodes)
+                            scrollable_nodes.extend(scroll_nodes)
+                    except Exception as e:
+                        retry_counts[app] += 1
+                        print(f"Error in processing node {app.Name}, retry attempt {retry_counts[app]}\nError: {e}")
+                        if retry_counts[app] < THREAD_MAX_RETRIES:
+                            new_future = executor.submit(self.get_nodes, app, self.desktop.is_app_browser(app))
+                            future_to_app[new_future] = app
+                        else:
+                            print(f"Task failed completely for {app.Name} after {THREAD_MAX_RETRIES} retries")
         return interactive_nodes,informative_nodes,scrollable_nodes
 
     def get_nodes(self, node: Control, is_browser=False) -> tuple[list[TreeElementNode],list[TextElementNode],list[ScrollElementNode]]:

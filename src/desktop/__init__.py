@@ -1,19 +1,22 @@
-from uiautomation import Control, GetRootControl, ControlType, GetFocusedControl, SetWindowTopmost, IsTopLevelWindow, IsZoomed, IsIconic, IsWindowVisible, ControlFromHandle
-from src.desktop.config import EXCLUDED_CLASSNAMES,BROWSER_NAMES, AVOIDED_APPS
+from uiautomation import Control, GetRootControl, ControlType, GetFocusedControl, ShowWindow, IsTopLevelWindow, IsZoomed, IsIconic, IsWindowVisible, ControlFromHandle
+from src.desktop.config import EXCLUDED_CLASSNAMES,BROWSER_NAMES
 from src.desktop.views import DesktopState,App,Size
 from fuzzywuzzy import process
 from psutil import Process
 from src.tree import Tree
 from time import sleep
+import pyautogui as pg
 from io import BytesIO
 from PIL import Image
 import subprocess
-import pyautogui
+import ctypes
 import csv
+import os
 import io
 
 class Desktop:
     def __init__(self):
+        ctypes.windll.user32.SetProcessDPIAware()
         self.desktop_state=None
         
     def get_state(self,use_vision:bool=False)->DesktopState:
@@ -25,11 +28,14 @@ class Desktop:
             screenshot=self.screenshot_in_bytes(screenshot=annotated_screenshot)
         else:
             screenshot=None
-        apps=self.get_apps()
-        active_app,apps=(apps[0],apps[1:]) if len(apps)>0 else (None,[])
+        active_app,apps=self.get_apps()
         self.desktop_state=DesktopState(apps=apps,active_app=active_app,screenshot=screenshot,tree_state=tree_state)
         return self.desktop_state
     
+    def get_active_app(self,apps:list[App])->App|None:
+        if len(apps)>0 and apps[0].status != "Minimized":
+            return apps[0]
+        return None
     
     def get_app_status(self,control:Control)->str:
         if IsIconic(control.NativeWindowHandle):
@@ -83,7 +89,7 @@ class Desktop:
             result = subprocess.run(
                 ['powershell', '-NoProfile', '-Command', 
                  '[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; ' + command], 
-                capture_output=True, check=True, text=True, encoding='utf-8'
+                capture_output=True, check=True, text=True, encoding='utf-8',cwd=os.path.expanduser(path='~\\Desktop')
             )
             return (result.stdout, result.returncode)
         except subprocess.CalledProcessError as e:
@@ -106,32 +112,17 @@ class Desktop:
         process=Process(node.ProcessId)
         return process.name() in BROWSER_NAMES
     
-    def resize_app(self,name:str,size:tuple[int,int]=None,loc:tuple[int,int]=None)->tuple[str,int]:
-        apps=self.get_apps()
-        
-        # Improved fuzzy matching for Chinese and English app names
-        # First try exact match (case insensitive)
-        exact_matches = [app for app in apps if name.lower() in app.name.lower() or app.name.lower() in name.lower()]
-        matched_app = None
-        
-        if exact_matches:
-            matched_app = exact_matches[0]
-        else:
-            # If no exact match, use fuzzy matching with lower threshold for Chinese
-            fuzzy_match = process.extractOne(name, apps, score_cutoff=60)
-            if fuzzy_match:
-                matched_app, _ = fuzzy_match
-            else:
-                # Try partial matching for Chinese characters
-                for app in apps:
-                    if any(char in app.name for char in name) or any(char in name for char in app.name):
-                        matched_app = app
-                        break
-        
-        if matched_app is None:
-            return (f'Application {name.title()} not open.',1)
-        
-        app_control=ControlFromHandle(matched_app.handle)
+    def get_windows_version(self)->str:
+        response,status=self.execute_command("(Get-CimInstance Win32_OperatingSystem).Caption")
+        if status==0:
+            return response.strip()
+        return "Windows"
+    
+    def resize_app(self,size:tuple[int,int]=None,loc:tuple[int,int]=None)->tuple[str,int]:
+        active_app=self.desktop_state.active_app
+        if active_app is None:
+            return ('No active app found',1)
+        app_control=ControlFromHandle(active_app.handle)
         if loc is None:
             x=app_control.BoundingRectangle.left
             y=app_control.BoundingRectangle.top
@@ -143,7 +134,7 @@ class Desktop:
         x,y=loc
         width,height=size
         app_control.MoveWindow(x,y,width,height)
-        return (f'Application {name.title()} resized to {width}x{height} at {x},{y}.',0)
+        return (f'Application {active_app.name.title()} resized to {width}x{height} at {x},{y}.',0)
         
     def launch_app(self,name:str)->tuple[str,int]:
         apps_map=self.get_apps_from_start_menu()
@@ -186,15 +177,23 @@ class Desktop:
         return (f'Application {name.title()} not found in start menu. Available apps with similar names: {list(apps_map.keys())[:5]}',1)
     
     def switch_app(self,name:str)->tuple[str,int]:
-        apps={app.name:app for app in self.get_apps()}
-        matched_app:tuple[str,float]=process.extractOne(name,apps,score_cutoff=20)
+        apps={app.name:app for app in [self.desktop_state.active_app]+self.desktop_state.apps if app is not None}
+        matched_app:tuple[str,float]=process.extractOne(name,list(apps.keys()))
         if matched_app is None:
             return (f'Application {name.title()} not found.',1)
-        app,_,_=matched_app
-        if SetWindowTopmost(app.handle,isTopmost=True):
-            return (f'{app.name.title()} switched to foreground.',0)
+        app_name,_=matched_app
+        app=apps.get(app_name)
+        if IsIconic(app.handle):
+            ShowWindow(app.handle, cmdShow=9)
+            return (f'{app_name.title()} restored from minimized state.',0)
         else:
-            return (f'Failed to switch to {app.name.title()}.',1)
+            shortcut=['alt','tab']
+            for app in apps.values():
+                if app.name==app_name:
+                    break
+                pg.hotkey(*shortcut)
+                pg.sleep(0.1)
+            return (f'Switched to {app_name.title()} window.',0)
 
     def get_app_size(self,control:Control):
         window=control.BoundingRectangle
@@ -214,14 +213,14 @@ class Desktop:
         is_name = "Overlay" in element.Name.strip()
         return no_children or is_name
         
-    def get_apps(self) -> list[App]:
+    def get_apps(self) -> tuple[App|None,list[App]]:
         try:
-            sleep(0.75)
+            sleep(0.5)
             desktop = GetRootControl()  # Get the desktop control
             elements = desktop.GetChildren()
             apps = []
             for depth, element in enumerate(elements):
-                if element.ClassName in EXCLUDED_CLASSNAMES or element.Name in AVOIDED_APPS or self.is_overlay_app(element):
+                if element.ClassName in EXCLUDED_CLASSNAMES or self.is_overlay_app(element):
                     continue
                 if element.ControlType in [ControlType.WindowControl, ControlType.PaneControl]:
                     status = self.get_app_status(element)
@@ -230,7 +229,10 @@ class Desktop:
         except Exception as ex:
             print(f"Error: {ex}")
             apps = []
-        return apps
+
+        active_app=self.get_active_app(apps)
+        apps=apps[1:] if len(apps)>1 else []
+        return (active_app,apps)
     
     def screenshot_in_bytes(self,screenshot:Image.Image)->bytes:
         io=BytesIO()
@@ -239,7 +241,7 @@ class Desktop:
         return bytes
 
     def get_screenshot(self,scale:float=0.7)->Image.Image:
-        screenshot=pyautogui.screenshot()
+        screenshot=pg.screenshot()
         size=(screenshot.width*scale, screenshot.height*scale)
         screenshot.thumbnail(size=size, resample=Image.Resampling.LANCZOS)
         return screenshot

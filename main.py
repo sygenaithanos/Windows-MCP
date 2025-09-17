@@ -146,15 +146,15 @@ def type_tool(loc:list[int],text:str,clear:bool=False,press_enter:bool=False)->s
         pg.press('enter')
     return f'Typed {text} on {control.Name} Element with ControlType {control.ControlTypeName} at ({x},{y}).'
 
-@mcp.tool(name='Resize-Tool',description='Resize a specific application window (e.g., "notepad", "calculator", "chrome", etc.) to specific size (WIDTHxHEIGHT) or move to specific location (X,Y).')
-def resize_tool(name:str,size:list[int]=None,loc:list[int]=None)->str:
+@mcp.tool(name='Resize-Tool',description='Resize active application window (e.g., "notepad", "calculator", "chrome", etc.) to specific size (WIDTHxHEIGHT) or move to specific location (X,Y).')
+def resize_tool(size:list[int]=None,loc:list[int]=None)->str:
     if size is not None and len(size) != 2:
         raise ValueError("Size must be a list of exactly 2 integers [width, height]")
     if loc is not None and len(loc) != 2:
         raise ValueError("Location must be a list of exactly 2 integers [x, y]")
     size_tuple = tuple(size) if size is not None else None
     loc_tuple = tuple(loc) if loc is not None else None
-    response,status=desktop.resize_app(name,size_tuple,loc_tuple)
+    response,status=desktop.resize_app(size_tuple,loc_tuple)
     return response
 
 @mcp.tool(name='Switch-Tool',description='Switch to a specific application window (e.g., "notepad", "calculator", "chrome", etc.) and bring to foreground.')
