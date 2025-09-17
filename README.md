@@ -25,6 +25,7 @@ mcp-name: io.github.CursorTouch/Windows-MCP
 
 ## Updates
 
+- Windows-MCP is added to [MCP Registry](https://github.com/modelcontextprotocol/registry)
 - Try out 🪟[Windows-Use](https://github.com/CursorTouch/Windows-Use)!!, an agent built using Windows-MCP.
 - Windows-MCP is now featured as Desktop Extension in `Claude Desktop`.
 
