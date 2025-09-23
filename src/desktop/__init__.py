@@ -10,13 +10,14 @@ from io import BytesIO
 from PIL import Image
 import subprocess
 import ctypes
+import locale
 import csv
-import os
 import io
 
 class Desktop:
     def __init__(self):
         ctypes.windll.user32.SetProcessDPIAware()
+        self.encoding=locale.getpreferredencoding()
         self.desktop_state=None
         
     def get_state(self,use_vision:bool=False)->DesktopState:
@@ -85,29 +86,18 @@ class Desktop:
     
     def execute_command(self,command:str)->tuple[str,int]:
         try:
-            # Use UTF-8 encoding for better Chinese character support
             result = subprocess.run(
-                ['powershell', '-NoProfile', '-Command', 
-                 '[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; ' + command], 
-                capture_output=True, check=True, text=True, encoding='utf-8',cwd=os.path.expanduser(path='~\\Desktop')
-            )
-            return (result.stdout, result.returncode)
-        except subprocess.CalledProcessError as e:
-            try:
-                # Try UTF-8 first
-                error_output = e.stdout if hasattr(e, 'stdout') and e.stdout else ''
-                return (error_output, e.returncode)
-            except Exception:
-                # Fallback to GBK for Chinese Windows systems
-                try:
-                    result = subprocess.run(
-                        ['powershell', '-NoProfile', '-Command', command], 
-                        capture_output=True, check=False
-                    )
-                    return (result.stdout.decode('gbk', errors='ignore'), result.returncode)
-                except Exception:
-                    return ('Command execution failed with encoding issues', 1)
+                ['powershell', '-NoProfile', '-Command', command], 
+            capture_output=True, timeout=25)
+            stdout_text=result.stdout.decode(self.encoding, errors='replace')
+            stderr_text=result.stderr.decode(self.encoding, errors='replace')
+            return (stdout_text or stderr_text, result.returncode)
+        except subprocess.TimeoutExpired:
+            return ('Command execution timed out', 1)
+        except Exception as e:
+            return ('Command execution failed', 1)
         
+                
     def is_app_browser(self,node:Control):
         process=Process(node.ProcessId)
         return process.name() in BROWSER_NAMES
@@ -138,41 +128,15 @@ class Desktop:
         
     def launch_app(self,name:str)->tuple[str,int]:
         apps_map=self.get_apps_from_start_menu()
-        
-        # Improved fuzzy matching for Chinese and English app names
-        # First try exact match (case insensitive)
-        exact_matches = {k: v for k, v in apps_map.items() if name.lower() in k.lower() or k.lower() in name.lower()}
-        if exact_matches:
-            # Use the first exact match
-            app_name = list(exact_matches.keys())[0]
-            app_id = exact_matches[app_name]
-            if app_id.endswith('.exe'):
-                _,status=self.execute_command(f'Start-Process "{app_id}"')
-            else:
-                _,status=self.execute_command(f'Start-Process "shell:AppsFolder\\{app_id}"')
-            response=f'Launched {name.title()}. Wait for the app to launch...'
-            return response,status
-        
-        # If no exact match, use fuzzy matching with lower threshold for Chinese
         matched_app=process.extractOne(name,apps_map,score_cutoff=60)
         if matched_app is not None:
-            app_id,_,app_name=matched_app
-            if app_id.endswith('.exe'):
-                _,status=self.execute_command(f'Start-Process "{app_id}"')
+            id,_,name=matched_app
+            if id.endswith('.exe'):
+                _,status=self.execute_command(f'Start-Process "{id}"')
             else:
-                _,status=self.execute_command(f'Start-Process "shell:AppsFolder\\{app_id}"')
+                _,status=self.execute_command(f'Start-Process "shell:AppsFolder\\{id}"')
             response=f'Launched {name.title()}. Wait for the app to launch...'
             return response,status
-        
-        # Try partial matching for Chinese characters
-        for app_name, app_id in apps_map.items():
-            if any(char in app_name for char in name) or any(char in name for char in app_name):
-                if app_id.endswith('.exe'):
-                    _,status=self.execute_command(f'Start-Process "{app_id}"')
-                else:
-                    _,status=self.execute_command(f'Start-Process "shell:AppsFolder\\{app_id}"')
-                response=f'Launched {name.title()}. Wait for the app to launch...'
-                return response,status
         
         return (f'Application {name.title()} not found in start menu. Available apps with similar names: {list(apps_map.keys())[:5]}',1)
     

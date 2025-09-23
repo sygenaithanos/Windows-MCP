@@ -42,13 +42,13 @@ mcp=FastMCP(name='windows-mcp',instructions=instructions,lifespan=lifespan)
 
 @mcp.tool(name='Launch-Tool', description='Launch an application from the Windows Start Menu by name (e.g., "notepad", "calculator", "chrome")')
 def launch_tool(name: str) -> str:
-    response,status=desktop.launch_app(name)
+    response,status=desktop.launch_app(name.lower())
     return response
     
 @mcp.tool(name='Powershell-Tool', description='Execute PowerShell commands and return the output with status code')
 def powershell_tool(command: str) -> str:
-    response,status=desktop.execute_command(command)
-    return f'Status Code: {status}\nResponse: {response}'
+    response,status_code=desktop.execute_command(command)
+    return f'Response: {response}\nStatus Code: {status_code}'
 
 @mcp.tool(name='State-Tool',description='Capture comprehensive desktop state including default language used by user interface, focused/opened applications, interactive UI elements (buttons, text fields, menus), informative content (text, labels, status), and scrollable areas. Optionally includes visual screenshot when use_vision=True. Essential for understanding current desktop context and available UI interactions.')
 def state_tool(use_vision:bool=False)->str:
@@ -59,8 +59,8 @@ def state_tool(use_vision:bool=False)->str:
     apps=desktop_state.apps_to_string()
     active_app=desktop_state.active_app_to_string()
     return [dedent(f'''
-    Default Language of User Interface:
-    {default_language}
+    Default Language of User:
+    {default_language} with encoding: {desktop.encoding}
                             
     Focused App:
     {active_app}
@@ -116,27 +116,12 @@ def type_tool(loc:list[int],text:str,clear:bool=False,press_enter:bool=False)->s
     x,y=loc[0],loc[1]
     pg.click(x=x, y=y)
     control=desktop.get_element_under_cursor()
+
     if clear=='True':
         pg.hotkey('ctrl','a')
         pg.press('backspace')
-    
-    # Check if text contains non-ASCII characters (like Chinese)
-    if any(ord(char) > 127 for char in text):
-        # Use clipboard method for non-ASCII characters
-        # Store current clipboard content
-        original_clipboard = pc.paste()
-        try:
-            # Copy text to clipboard and paste it
-            pc.copy(text)
-            pg.sleep(0.1)  # Small delay to ensure clipboard is updated
-            pg.hotkey('ctrl','v')
-        finally:
-            # Restore original clipboard content
-            pg.sleep(0.1)
-            pc.copy(original_clipboard)
-    else:
-        # Use normal typewrite for ASCII characters
-        pg.typewrite(text,interval=0.1)
+
+    pg.typewrite(text.encode(encoding=desktop.encoding),interval=0.1)
     
     if press_enter:
         pg.press('enter')
@@ -150,7 +135,7 @@ def resize_tool(size:list[int]=None,loc:list[int]=None)->str:
         raise ValueError("Location must be a list of exactly 2 integers [x, y]")
     size_tuple = tuple(size) if size is not None else None
     loc_tuple = tuple(loc) if loc is not None else None
-    response,status=desktop.resize_app(size_tuple,loc_tuple)
+    response,_=desktop.resize_app(size_tuple,loc_tuple)
     return response
 
 @mcp.tool(name='Switch-Tool',description='Switch to a specific application window (e.g., "notepad", "calculator", "chrome", etc.) and bring to foreground.')
