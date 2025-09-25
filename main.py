@@ -43,7 +43,15 @@ mcp=FastMCP(name='windows-mcp',instructions=instructions,lifespan=lifespan)
 @mcp.tool(name='Launch-Tool', description='Launch an application from the Windows Start Menu by name (e.g., "notepad", "calculator", "chrome")')
 def launch_tool(name: str) -> str:
     response,status=desktop.launch_app(name.lower())
-    return response
+    if status!=0:
+        return response
+    consecutive_waits=2
+    for _ in range(consecutive_waits):
+        if not desktop.is_app_running(name):
+            pg.sleep(1.0)
+        else:
+            return response
+    return f'Launching {name.title()} wait for it to come load.'
     
 @mcp.tool(name='Powershell-Tool', description='Execute PowerShell commands and return the output with status code')
 def powershell_tool(command: str) -> str:

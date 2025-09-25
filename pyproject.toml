@@ -18,6 +18,7 @@ dependencies = [
     "ipykernel>=6.30.0",
     "live-inspect>=0.1.1",
     "markdownify>=1.1.0",
+    "pdfplumber>=0.11.7",
     "pillow>=11.2.1",
     "psutil>=7.0.0",
     "pyautogui>=0.9.54",

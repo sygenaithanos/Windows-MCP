@@ -86,9 +86,7 @@ class Desktop:
     
     def execute_command(self,command:str)->tuple[str,int]:
         try:
-            result = subprocess.run(
-                ['powershell', '-NoProfile', '-Command', command], 
-            capture_output=True, timeout=25)
+            result = subprocess.run(['powershell', '-NoProfile', '-Command', command], capture_output=True, timeout=25)
             stdout_text=result.stdout.decode(self.encoding, errors='replace')
             stderr_text=result.stderr.decode(self.encoding, errors='replace')
             return (stdout_text or stderr_text, result.returncode)
@@ -96,7 +94,11 @@ class Desktop:
             return ('Command execution timed out', 1)
         except Exception as e:
             return ('Command execution failed', 1)
-        
+
+    def is_app_running(self,name:str)->bool:
+        active_app,apps=self.get_apps()
+        apps={app.name:app for app in [active_app]+apps if app is not None}
+        return process.extractOne(name,list(apps.keys()),score_cutoff=60) is not None        
                 
     def is_app_browser(self,node:Control):
         process=Process(node.ProcessId)
@@ -135,10 +137,9 @@ class Desktop:
                 _,status=self.execute_command(f'Start-Process "{id}"')
             else:
                 _,status=self.execute_command(f'Start-Process "shell:AppsFolder\\{id}"')
-            response=f'Launched {name.title()}. Wait for the app to launch...'
+            response=f'Launched {name.title()}.'
             return response,status
-        
-        return (f'Application {name.title()} not found in start menu. Available apps with similar names: {list(apps_map.keys())[:5]}',1)
+        return (f'Application {name.title()} not found in start menu.',1)
     
     def switch_app(self,name:str)->tuple[str,int]:
         apps={app.name:app for app in [self.desktop_state.active_app]+self.desktop_state.apps if app is not None}
