@@ -24,6 +24,7 @@ dependencies = [
     "pyautogui>=0.9.54",
     "pygetwindow>=0.0.9",
     "python-levenshtein>=0.27.1",
+    "pywinauto>=0.6.9",
     "requests>=2.32.3",
     "uiautomation>=2.0.24",
 ]

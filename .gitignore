@@ -169,7 +169,7 @@ user_data
 *.dxt
 
 node_modules
-notebook.ipynb
+notebooks
 
 .mcpregistry_github_token
 .mcpregistry_registry_token

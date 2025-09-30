@@ -234,28 +234,28 @@ def scrape_tool(url:str)->str:
 @click.option(
     "--transport",
     help="The transport layer used by the MCP server.",
-    type=click.Choice(['stdio','sse']),
+    type=click.Choice(['stdio','sse','streamable-http']),
     default='stdio'
 )
 @click.option(
     "--host",
-    help="Host to bind the SSE server.",
+    help="Host to bind the SSE/Streamable HTTP server.",
     default="localhost",
     type=str,
     show_default=True
 )
 @click.option(
     "--port",
-    help="Port to bind the SSE server.",
+    help="Port to bind the SSE/Streamable HTTP server.",
     default=8000,
     type=int,
     show_default=True
 )
 def main(transport, host, port):
     if transport=='stdio':
-        mcp.run(transport='stdio')
+        mcp.run()
     else:
-        mcp.run(transport='sse',host=host,port=port)
+        mcp.run(transport=transport,host=host,port=port)
 
 if __name__ == "__main__":
     main()

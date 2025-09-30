@@ -1,6 +1,7 @@
 from uiautomation import Control, GetRootControl, ControlType, GetFocusedControl, ShowWindow, IsTopLevelWindow, IsZoomed, IsIconic, IsWindowVisible, ControlFromHandle
 from src.desktop.config import EXCLUDED_CLASSNAMES,BROWSER_NAMES
 from src.desktop.views import DesktopState,App,Size
+from pywinauto import Application
 from fuzzywuzzy import process
 from psutil import Process
 from src.tree import Tree
@@ -152,12 +153,8 @@ class Desktop:
             ShowWindow(app.handle, cmdShow=9)
             return (f'{app_name.title()} restored from minimized state.',0)
         else:
-            shortcut=['alt','tab']
-            for app in apps.values():
-                if app.name==app_name:
-                    break
-                pg.hotkey(*shortcut)
-                pg.sleep(0.1)
+            app=Application().connect(handle=app.handle)
+            app.window().set_focus()
             return (f'Switched to {app_name.title()} window.',0)
 
     def get_app_size(self,control:Control):
