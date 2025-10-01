@@ -59,7 +59,7 @@ def powershell_tool(command: str) -> str:
     return f'Response: {response}\nStatus Code: {status_code}'
 
 @mcp.tool(name='State-Tool',description='Capture comprehensive desktop state including default language used by user interface, focused/opened applications, interactive UI elements (buttons, text fields, menus), informative content (text, labels, status), and scrollable areas. Optionally includes visual screenshot when use_vision=True. Essential for understanding current desktop context and available UI interactions.')
-def state_tool(use_vision:bool=False)->str:
+def state_tool(use_vision:bool=False):
     desktop_state=desktop.get_state(use_vision=use_vision)
     interactive_elements=desktop_state.tree_state.interactive_elements_to_string()
     informative_elements=desktop_state.tree_state.informative_elements_to_string()
@@ -210,7 +210,7 @@ def move_tool(to_loc:list[int])->str:
 @mcp.tool(name='Shortcut-Tool',description='Execute keyboard shortcuts using key combinations. Pass keys as list (e.g., ["ctrl", "c"] for copy, ["alt", "tab"] for app switching, ["win", "r"] for Run dialog).')
 def shortcut_tool(shortcut:list[str]):
     pg.hotkey(*shortcut)
-    return f'Pressed {'+'.join(shortcut)}.'
+    return f"Pressed {'+'.join(shortcut)}."
 
 @mcp.tool(name='Key-Tool',description='Press individual keyboard keys. Supports special keys like "enter", "escape", "tab", "space", "backspace", "delete", arrow keys ("up", "down", "left", "right"), function keys ("f1"-"f12").')
 def key_tool(key:str='')->str:
